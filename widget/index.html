@@ -241,6 +241,7 @@
         pluginsContainer.innerHTML = '';
 
         getPlugins(obj, function (result) {
+            plugins = [];
             plugins = result;
 
             var options = calcImgOptions(layout);
@@ -663,6 +664,7 @@
 
     //attach scroll event for lazy load images
     document.getElementsByTagName('body')[0].addEventListener("scroll", lazyLoad.processLazyImages, false);
+    document.addEventListener("DOMContentLoaded", buildfire.appearance.ready(), false);
 </script>
 <style>
     * {
