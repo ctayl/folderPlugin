@@ -104,6 +104,65 @@
 <div id="txt" class="text-left folder-plugin-text clearfix hide-empty"></div>
 <div id="pluginsContainer"></div>
 <script>
+    buildfire.cropImage = function (url, options, element) {
+        // return unsupported file types
+        if (/.(gif|mp4|mpeg)(?!.)/g.test(url)) {
+            var filetype = /.(gif|mp4|mpeg)(?!.)/g.exec(url)[0];
+            console.warn(filetype + ' files are not supported by imagelib. Returning original URL');
+            return url;
+        }
+
+        if (buildfire.imageLib.isProdImageServer(url)) {
+            url = url.replace(/^https:\/\//i, 'http://');
+        }
+        if (!options) {
+            options = {};
+        }
+        if (typeof (options) != "object") {
+            throw ("options not an object");
+        }
+        if (!options.width && !options.height) {
+            options = { width: 'full', height: 'full' };
+        }
+        if (options.width == 'full') {
+            options.width = window.innerWidth;
+        }
+        if (options.height == 'full') {
+            options.height = window.innerHeight;
+        }
+        if (!options.width || !options.height) {
+            console.warn('cropImage doenst have width or height please fix. returning original url');
+            return url + '?h=' + options.height + '&w=' + options.width;
+        }
+
+        var ratio = window.devicePixelRatio;
+        if (options && options.disablePixelRatio) {
+            ratio = options.disablePixelRatio;
+        }
+
+        var protocol = window.location.protocol == "https:" ? "https:" : "http:";
+        var root = protocol + "//czi3m2qn.cloudimg.io/crop/";
+
+        var size = Math.floor(options.width * ratio) + "x" + Math.floor(options.height * ratio) + "/";
+        var compression = buildfire.imageLib.getCompression(options.compression);
+
+        if (element) {
+            var src = root + size + compression + url;
+            var p = new Packet(null, 'imageCache.get', src);
+            buildfire._sendPacket(p, function (err, result) {
+                if (result) {
+                    if (element.tagName === 'IMG') {
+                        element.src = result;
+                    } else {
+                        var bgCss = "url(" + "'" + result + "')"
+                        element.style.setProperty('background', bgCss, 'important');
+                    }
+                }
+            });
+        }
+
+        return root + size + compression + url;
+    };
     var plugins = [];
 
     var lazyLoad = {
@@ -119,39 +178,43 @@
             }
             
             function _initImg(item) {
-                img.src = item.getAttribute('data-src');
+                var options = {};
+                options.width = item.getAttribute('data-crop-width');
+                options.height = item.getAttribute('data-crop-height');
+
+                buildfire.imageLib.cropImage(item.getAttribute('data-src'), options, img);
                 img.className = 'reveal-img';
                 if (img.complete) _addImg();
                 else img.onload = _addImg;
 
-                img.onerror=function (e) {
-                    if(_failAttempts >= 1){
-                        return;
-                    }
+                img.onerror=function (e) {console.log(e, img)};
+                //     if(_failAttempts >= 1){
+                //         return;
+                //     }
 
-                    _failAttempts++;
+                //     _failAttempts++;
 
-                    /*
-                    *  Sometimes Image IO doesn't crop image with certain width & height
-                    *  So this for changes the dimensions and try to do another crop using image IO
-                    *  to avoid showing only the blurred image
-                    * */
+                //     /*
+                //     *  Sometimes Image IO doesn't crop image with certain width & height
+                //     *  So this for changes the dimensions and try to do another crop using image IO
+                //     *  to avoid showing only the blurred image
+                //     * */
 
-                    img = new Image();
-                    var originalImg = item.getAttribute('data-original-img');
-                    var cropWidth = parseInt(item.getAttribute('data-crop-width'));
-                    cropWidth +=1;
-                    var cropHeight = parseInt(item.getAttribute('data-crop-height'));
-                    cropHeight+=1;
+                //     img = new Image();
+                //     var originalImg = item.getAttribute('data-original-img');
+                //     var cropWidth = parseInt(item.getAttribute('data-crop-width'));
+                //     cropWidth +=1;
+                //     var cropHeight = parseInt(item.getAttribute('data-crop-height'));
+                //     cropHeight+=1;
 
-                    item.setAttribute('data-crop-width',cropWidth);
-                    item.setAttribute('data-crop-height',cropHeight);
+                //     item.setAttribute('data-crop-width',cropWidth);
+                //     item.setAttribute('data-crop-height',cropHeight);
 
-                    var _newCroppedImg = optimizeImg(buildfire.imageLib.cropImage(originalImg, {width:cropWidth,height: cropHeight}));
-                    item.setAttribute('data-src',_newCroppedImg);
+                //     var _newCroppedImg = optimizeImg(buildfire.imageLib.cropImage(originalImg, {width:cropWidth,height: cropHeight}));
+                //     item.setAttribute('data-src',_newCroppedImg);
 
-                    _initImg(item);
-                };
+                //     _initImg(item);
+                // };
             }
 
             // replace image
@@ -286,9 +349,8 @@
 
                     if (p.iconUrl || p.iconClassName) {
                         if (p.iconUrl) {
-                            var _croppedImg = optimizeImg(buildfire.imageLib.cropImage(p.iconUrl, options));
                             divImg.classList.add("hasImg");
-                            divImg.setAttribute("data-src", _croppedImg);
+                            divImg.setAttribute("data-src", p.iconUrl);
                             divImg.setAttribute("data-original-img", p.iconUrl);
                             divImg.setAttribute("data-crop-width", options.width);
                             divImg.setAttribute("data-crop-height", options.height);
@@ -517,10 +579,8 @@
         }
 
         if (bgImage) {
-            style.innerHTML += "body { background: no-repeat url('" + buildfire.imageLib.cropImage(bgImage, {
-                    width: window.innerWidth,
-                    height: window.innerHeight
-                }) + "') !Important; background-size: cover !important; } ";
+            style.innerHTML += "body { background-size: cover !important; } ";
+            buildfire.imageLib.cropImage(bgImage, { width: window.innerWidth, height: window.innerHeight }, document.body);
         }
 
         if (obj.data.design.hideText)
