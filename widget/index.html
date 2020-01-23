@@ -3,7 +3,9 @@
 
 <head lang="en">
     <meta name="buildfire" content="disableBootstrap,disableAppStyles" />
-    <script src="../../../scripts/_bundles/buildfire_lightcarousel.min.js"></script>
+    <!-- <script src="../../../scripts/_bundles/buildfire_lightcarousel.min.js"></script> -->
+    <script src="../../../scripts/buildfire.js"></script>
+    <script src="../../../scripts/buildfire/components/carouselLight/carouselLight.js"></script>
     <!--this css is important to be loaded first for the first paint-->
     <style>
         .item-disabled {
@@ -40,6 +42,8 @@
         }
 
         .media-holder.media-holder-icon.hasImg {
+            display: flex;
+            align-items: center;
             position: relative;
             overflow: hidden;
             height: 100%;
@@ -54,7 +58,7 @@
         }
 
         .media-holder.media-holder-icon img.reveal-img {
-            position: absolute;
+            /* position: absolute; */
             left: 0;
             top: 0;
         }
@@ -158,8 +162,8 @@
                     var src = item.getAttribute('data-src');
 
                     var options = {};
-                    options.width = item.getAttribute('data-crop-width');
-                    options.height = item.getAttribute('data-crop-height');
+                    options.size = item.getAttribute('data-crop-size');
+                    options.aspect = item.getAttribute('data-crop-aspect');
                     options.compression = compressImages ? 80 : false;
 
                     buildfire.imageLib.cropImage(src, options, img);
@@ -295,6 +299,8 @@
                                 divImg.classList.add("hasImg");
                                 divImg.setAttribute("data-src", p.iconUrl);
                                 divImg.setAttribute("data-original-img", p.iconUrl);
+                                divImg.setAttribute("data-crop-size", options.size);
+                                divImg.setAttribute("data-crop-aspect", options.aspect);
                                 divImg.setAttribute("data-crop-width", options.width);
                                 divImg.setAttribute("data-crop-height", options.height);
                                 divImg.classList.add('lazy-img');
@@ -590,30 +596,44 @@
             var option = {};
 
             if ([3, 4, 9].indexOf(layout) >= 0) {
+                option.size = 'full-width';
+                option.aspect = '16:9';
                 option.width = window.innerWidth;
                 option.height = option.width * 9 / 16;
             }
             else if ([1, 8].indexOf(layout) >= 0) {
+                option.size = 'sixth-width';
+                option.aspect = '1:1';
                 option.width = window.innerWidth * (0.15);
                 option.height = option.width;
             }
             else if (layout == 2) {
+                option.size = 'third-width';
+                option.aspect = '4:3';
                 option.width = window.innerWidth * (0.32);
                 option.height = window.innerWidth * (0.18);
             }
             else if ([5, 11].indexOf(layout) >= 0) {
+                option.size = 'half-width';
+                option.aspect = '1:1';
                 option.width = Math.round(window.innerWidth / 2);
                 option.height = option.width;
             }
             else if (layout == 6) {
+                option.size = 'half-width';
+                option.aspect = '1:1';
                 option.width = Math.round(window.innerWidth / 2.4);
                 option.height = option.width;
             }
             else if (layout == 7) {
+                option.size = 'full-width';
+                option.aspect = '16:9';
                 option.width = window.innerWidth;
                 option.height = Math.round(window.innerWidth / 2.2);
             }
             else if (layout == 10) {
+                option.size = 'full-width';
+                option.aspect = '2.39:1';
                 option.width = window.innerWidth;
                 option.height = Math.round(window.innerWidth * 0.23);
             }
