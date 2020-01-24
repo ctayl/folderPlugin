@@ -105,6 +105,7 @@
 
         var plugins = [];
         var compressImages = false;
+        var initialized = false;
 
         const cache = {
             instanceId: null,
@@ -130,7 +131,13 @@
 
                         if (!result) return reject();
 
-                        resolve(null, JSON.parse(result));
+                        try {
+                            let data = JSON.parse(result);
+                            resolve(data);
+                        } catch (error) {
+                            reject(error);
+                        }
+
                     }
 
                     this.init().then(getCache);
@@ -196,6 +203,7 @@
             },
             processLazyImages: function () {
                 var lazyImgs = document.querySelectorAll('.lazy-img');
+
                 for (var i = 0; i < lazyImgs.length; i++) {
                     if (lazyLoad.isInViewport(lazyImgs[i])) {
                         console.log('lazy img loaded');
@@ -217,11 +225,13 @@
             buildfire.datastore.getWithDynamicData(loadData);
         });
 
-        function loadData(err, obj) {
+        function loadData(err, obj, isUpdate = false) {
             if (err || !obj || !obj.data) return;
             if (!obj.data.design) return;
 
             cache.set(obj);
+            if (!isUpdate && initialized) return console.log('update avoided');
+            if (!isUpdate) initialized = true;
 
             layout = obj.data.design.selectedLayout;
             compressImages = obj.data.design.compressImages;
@@ -548,12 +558,12 @@
             }
         }
 
-        cache.get().then(loadData).catch(console.error);
+        cache.get().then(data => loadData(null, data)).catch(console.error);
 
         buildfire.datastore.getWithDynamicData(loadData);
 
         buildfire.datastore.onUpdate(function (obj) {
-            loadData(null, obj)
+            loadData(null, obj, true)
         });
 
         buildfire.messaging.onReceivedMessage = function (event) {
@@ -609,7 +619,7 @@
             }
             else if (layout == 2) {
                 option.size = 'third-width';
-                option.aspect = '4:3';
+                option.aspect = '16:9';
                 option.width = window.innerWidth * (0.32);
                 option.height = window.innerWidth * (0.18);
             }
